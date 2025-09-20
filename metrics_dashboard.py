@@ -17,7 +17,7 @@ LOCAL_TZ = pytz.timezone("America/Sao_Paulo")
 
 @st.cache_data(ttl=60)
 def load_data(conn_str):
-    conn = psycopg2.connect(conn_str)
+    conn = psycopg2.connect(conn_str, sslmode="require")
     query = "SELECT provider, latency, created_at FROM documents_latencyllm"
     df = pd.read_sql_query(query, conn)
     conn.close()
