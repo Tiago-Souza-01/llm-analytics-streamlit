@@ -4,23 +4,30 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import psycopg2
 import pytz
 import streamlit as st
 from dotenv import load_dotenv
+from supabase import create_client
 
 load_dotenv()
-DB_PATH = os.getenv("DB_PATH")
+
 
 LOCAL_TZ = pytz.timezone("America/Sao_Paulo")
+SUPABASE_URL = os.getenv("EXPO_PUBLIC_SUPABASE_URL")
+SUPABASE_KEY = os.getenv("EXPO_PUBLIC_SUPABASE_KEY")
 
 
 @st.cache_data(ttl=60)
-def load_data(conn_str):
-    conn = psycopg2.connect(conn_str, sslmode="require")
-    query = "SELECT provider, latency, created_at FROM documents_latencyllm"
-    df = pd.read_sql_query(query, conn)
-    conn.close()
+def load_data_via_client():
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+    res = (
+        supabase.table("documents_latencyllm")
+        .select("provider,latency,created_at")
+        .execute()
+    )
+    df = pd.DataFrame(res.data)
+
     return df
 
 
@@ -35,7 +42,7 @@ st.markdown(
 )
 st.markdown("<hr style='border:1px solid #4F8BF9'>", unsafe_allow_html=True)
 
-df = load_data(DB_PATH)
+df = load_data_via_client()
 
 
 df["created_at"] = pd.to_datetime(df["created_at"], utc=True).dt.tz_convert(LOCAL_TZ)
